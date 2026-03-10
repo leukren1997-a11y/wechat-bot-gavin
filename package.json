@@ -5,16 +5,9 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "dev": "node ./cli.js",
-    "format": "prettier --write ./src",
-    "start": "node ./cli.js",
-    "test": "node ./src/wechaty/testMessage.js",
-    "test-openai": "node ./src/openai/__test__.js",
-    "test-xunfei": "node ./src/xunfei/__test__.js",
-    "test-kimi": "node ./src/kimi/__test__.js",
-    "test-dify": "node ./src/dify/__test__.js",
-    "prepare": "husky"
-  },
+  "dev": "node -e \"require('http').createServer((req,res)=>res.end('Bot running')).listen(process.env.PORT||3000,'0.0.0.0');\" && node ./cli.js",
+  "start": "node -e \"require('http').createServer((req,res)=>res.end('Bot running')).listen(process.env.PORT||3000,'0.0.0.0');\" && node ./cli.js"
+},
   "lint-staged": {
     "*.{js,ts,md}": [
       "prettier --write"
