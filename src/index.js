@@ -11,8 +11,26 @@ import { defaultMessage } from './wechaty/sendMessage.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
-const env = dotenv.config().parsed // 环境参数
+
+// 🌟 修改1：优先读取系统环境变量（Render配置的），兼容本地.env
+dotenv.config() // 加载本地.env（如果有），但系统环境变量会覆盖
+// 合并系统环境变量和本地.env，系统变量优先级更高
+const env = {
+  ...dotenv.config().parsed,
+  ...process.env
+}
 const { version, name } = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../package.json'), 'utf8'))
+
+// 🌟 修改2：添加端口监听（满足Render要求，防止服务被判定为未启动）
+const PORT = process.env.PORT || 3000
+import http from 'http'
+const server = http.createServer((req, res) => {
+  res.writeHead(200, { 'Content-Type': 'text/plain' })
+  res.end('WeChat Bot is running!')
+})
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`✅ Health check server running on port ${PORT}`)
+})
 
 // 扫码
 function onScan(qrcode, status) {
@@ -117,66 +135,66 @@ process.on('uncaughtException', (err) => {
   // }
 })
 
-// 控制启动
+// 🌟 修改3：修复环境变量读取逻辑，优先用系统变量
 function handleStart(type) {
   serviceType = type
   console.log('🌸🌸🌸 / type: ', type)
   switch (type) {
     case 'ChatGPT':
-      if (env.OPENAI_API_KEY) return botStart()
-      console.log('❌ 请先配置.env文件中的 OPENAI_API_KEY')
+      if (process.env.OPENAI_API_KEY) return botStart()
+      console.log('❌ 请先配置 OPENAI_API_KEY 环境变量')
       break
     case 'doubao':
-      if (env.DOUBAO_API_KEY) return botStart()
-      console.log('❌ 请先配置.env文件中的 DOUBAO_API_KEY')
+      if (process.env.DOUBAO_API_KEY) return botStart()
+      console.log('❌ 请先配置 DOUBAO_API_KEY 环境变量')
       break
     case 'deepseek':
-      if (env.DEEPSEEK_API_KEY) return botStart()
-      console.log('❌ 请先配置.env文件中的 DEEPSEEK_API_KEY')
+      if (process.env.DEEPSEEK_API_KEY) return botStart()
+      console.log('❌ 请先配置 DEEPSEEK_API_KEY 环境变量')
       break
     case 'Kimi':
-      if (env.KIMI_API_KEY) return botStart()
-      console.log('❌ 请先配置.env文件中的 KIMI_API_KEY')
+      if (process.env.KIMI_API_KEY) return botStart()
+      console.log('❌ 请先配置 KIMI_API_KEY 环境变量')
       break
     case 'Xunfei':
-      if (env.XUNFEI_APP_ID && env.XUNFEI_API_KEY && env.XUNFEI_API_SECRET) {
+      if (process.env.XUNFEI_APP_ID && process.env.XUNFEI_API_KEY && process.env.XUNFEI_API_SECRET) {
         return botStart()
       }
-      console.log('❌ 请先配置.env文件中的 XUNFEI_APP_ID，XUNFEI_API_KEY，XUNFEI_API_SECRET')
+      console.log('❌ 请先配置 XUNFEI_APP_ID，XUNFEI_API_KEY，XUNFEI_API_SECRET 环境变量')
       break
     case 'deepseek-free':
-      if (env.DEEPSEEK_FREE_URL && env.DEEPSEEK_FREE_TOKEN && env.DEEPSEEK_FREE_MODEL) {
+      if (process.env.DEEPSEEK_FREE_URL && process.env.DEEPSEEK_FREE_TOKEN && process.env.DEEPSEEK_FREE_MODEL) {
         return botStart()
       }
-      console.log('❌ 请先配置.env文件中的 DEEPSEEK_FREE_URL，DEEPSEEK_FREE_TOKEN，DEEPSEEK_FREE_MODEL')
+      console.log('❌ 请先配置 DEEPSEEK_FREE_URL，DEEPSEEK_FREE_TOKEN，DEEPSEEK_FREE_MODEL 环境变量')
       break
     case '302AI':
-      if (env._302AI_API_KEY) {
+      if (process.env._302AI_API_KEY) {
         return botStart()
       }
-      console.log('❌ 请先配置.env文件中的 _302AI_API_KEY')
+      console.log('❌ 请先配置 _302AI_API_KEY 环境变量')
       break
     case 'dify':
-      if (env.DIFY_API_KEY && env.DIFY_URL) {
+      if (process.env.DIFY_API_KEY && process.env.DIFY_URL) {
         return botStart()
       }
-      console.log('❌ 请先配置.env文件中的 DIFY_API_KEY')
+      console.log('❌ 请先配置 DIFY_API_KEY 和 DIFY_URL 环境变量')
       break
     case 'ollama':
-      if (env.OLLAMA_URL && env.OLLAMA_MODEL) {
+      if (process.env.OLLAMA_URL && process.env.OLLAMA_MODEL) {
         return botStart()
       }
       break
     case 'tongyi':
-      if (env.TONGYI_URL && env.TONGYI_MODEL) {
+      if (process.env.TONGYI_URL && process.env.TONGYI_MODEL) {
         return botStart()
       }
       break
     case 'claude':
-      if (env.CLAUDE_API_KEY && env.CLAUDE_MODEL) {
+      if (process.env.CLAUDE_API_KEY && process.env.CLAUDE_MODEL) {
         return botStart()
       }
-      console.log('❌ 请先配置.env文件中的 CLAUDE_API_KEY 和 CLAUDE_MODEL')
+      console.log('❌ 请先配置 CLAUDE_API_KEY 和 CLAUDE_MODEL 环境变量')
       break
     default:
       console.log('❌ 服务类型错误, 目前支持： ChatGPT | doubao | deepseek | Kimi | Xunfei | DIFY | OLLAMA | TONGYI')
@@ -206,13 +224,15 @@ const questions = [
   },
 ]
 
+// 🌟 修改4：优先读取系统环境变量中的SERVICE_TYPE
 function init() {
-  if (env.SERVICE_TYPE) {
-    // 判断env中SERVICE_TYPE是否配置和并且属于serveList数组中value的值
-    if (serveList.find((item) => item.value === env.SERVICE_TYPE)) {
-      handleStart(env.SERVICE_TYPE)
+  const serviceTypeEnv = process.env.SERVICE_TYPE || env.SERVICE_TYPE
+  if (serviceTypeEnv) {
+    // 判断SERVICE_TYPE是否配置正确
+    if (serveList.find((item) => item.value === serviceTypeEnv)) {
+      handleStart(serviceTypeEnv)
     } else {
-      console.log('❌ 请正确配置.env文件中的 SERVICE_TYPE，或者删除该项')
+      console.log('❌ 请正确配置 SERVICE_TYPE 环境变量，或者删除该项')
     }
   } else {
     inquirer
